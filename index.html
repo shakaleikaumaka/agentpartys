@@ -166,7 +166,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 #djbooth button{background:rgba(75,45,127,.8);border:1px solid rgba(201,166,255,.4);color:#fff;border-radius:16px;padding:6px 13px;cursor:pointer;font-size:12px;font-family:Georgia,serif;white-space:nowrap}
 #djbooth a{color:#7cd3ff;font-size:10px;text-decoration:none}
 </style>
-<div id="djbooth"><div class="disc">🎧</div><div class="tinfo"><b id="djvibe">DJ ʻOHANA — sunshine set ☀️ happy EDM · afro house</b><span id="djtrack">open source sunshine · press play · good vibes forever</span></div><button id="djplay">▶ PLAY</button><button id="djskip" style="display:none">⏭</button></div>
+<div id="djbooth"><div class="disc">🎧</div><div class="tinfo"><b id="djvibe">DJ ʻOHANA — sunshine set ☀️ happy EDM · afro house</b><span id="djtrack">open source sunshine · press play · good vibes forever</span></div><button id="djplay">▶ PLAY</button><button id="djskip" style="display:none">⏭</button><button id="djlove" style="display:none" title="love this track — the DJ remembers 💗">🤍</button></div>
 <audio id="djaudio"></audio>
 <script>
 (function(){
@@ -192,8 +192,28 @@ async function moreCrates(){
     return (await r2.json()).response.docs.map(d=>d.identifier);
   }catch(e){return [];}
 }
+// 💗 THE LOVED CRATE — how the DJ learns what the family loves (canon Aug 1 2026, Shaka: "let him know what song we love")
+// FAMILY_LOVED: canon bangers Shaka & the ʻohana have blessed — Admiral updates this list; they recur in everyone's mix.
+const FAMILY_LOVED=[];
+function myLoves(){try{return JSON.parse(localStorage.getItem('djloves')||'[]');}catch(e){return[];}}
+function saveLove(t){const L=myLoves();if(!L.some(x=>x.id===t.id)){L.push(t);localStorage.setItem('djloves',JSON.stringify(L.slice(-100)));}}
+let now=null,loveBtn=document.getElementById('djlove');
+function paintLove(){if(!now)return;loveBtn.textContent=myLoves().some(x=>x.id===now.id)?'💗':'🤍';}
+loveBtn.addEventListener('click',()=>{
+  if(!now)return;saveLove(now);paintLove();
+  loveBtn.animate([{transform:'scale(1)'},{transform:'scale(1.7)'},{transform:'scale(1)'}],{duration:400});
+  const body=encodeURIComponent('🎧💗 LOVED TRACK for the family crate:\n\n'+now.title+' — '+now.artist+'\nhttps://archive.org/details/'+now.id+'\n\nDJ ʻOhana: more like this, please! 🌺');
+  const gh='https://github.com/shakaleikaumaka/agentpartys/issues/new?title='+encodeURIComponent('💗 loved: '+now.title.slice(0,60))+'&body='+body;
+  track.innerHTML='💗 loved! the DJ remembers · <a href="'+gh+'" target="_blank" rel="noopener">💌 tell the ʻohana</a> · <a href="https://archive.org/details/'+now.id+'" target="_blank" rel="noopener">source ↗</a>';
+});
 async function playNext(){
-  if(!queue.length){track.textContent='digging the internet crates…';const fresh=await moreCrates();queue=shuffle(fresh.length?SEEDS.concat(fresh):SEEDS.slice());}
+  if(!queue.length){
+    track.textContent='digging the internet crates…';
+    const fresh=await moreCrates();
+    // the mix = fresh digs + family canon + a taste of YOUR loved crate (the DJ remembers you)
+    const loves=shuffle(myLoves().map(x=>x.id)).slice(0,4);
+    queue=shuffle((fresh.length?SEEDS.concat(fresh):SEEDS.slice()).concat(FAMILY_LOVED).concat(loves));
+  }
   const id=queue.shift();
   try{
     const r=await fetch('https://archive.org/metadata/'+id);const j=await r.json();
@@ -201,9 +221,11 @@ async function playNext(){
     if(!mp3){return playNext();}
     const title=(j.metadata&&j.metadata.title)||id;
     const artist=(j.metadata&&j.metadata.creator)||'the open internet';
+    now={id:id,title:String(title),artist:String(artist)};
     audio.src='https://archive.org/download/'+id+'/'+encodeURIComponent(mp3.name);
     audio.play().catch(()=>{track.textContent='tap ▶ to start the mix';booth.classList.remove('playing');});
     track.innerHTML='🎵 '+title+' — '+artist+' · <a href="https://archive.org/details/'+id+'" target="_blank" rel="noopener">source ↗</a>';
+    loveBtn.style.display='';paintLove();
   }catch(e){setTimeout(playNext,1500);}
 }
 audio.addEventListener('ended',playNext);
