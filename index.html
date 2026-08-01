@@ -166,18 +166,30 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
 #djbooth button{background:rgba(75,45,127,.8);border:1px solid rgba(201,166,255,.4);color:#fff;border-radius:16px;padding:6px 13px;cursor:pointer;font-size:12px;font-family:Georgia,serif;white-space:nowrap}
 #djbooth a{color:#7cd3ff;font-size:10px;text-decoration:none}
 </style>
-<div id="djbooth"><div class="disc">🎧</div><div class="tinfo"><b>DJ ʻOHANA — the open source mix</b><span id="djtrack">non-stop netlabel bangers · press play · 24/7 forever</span></div><button id="djplay">▶ PLAY</button><button id="djskip" style="display:none">⏭</button></div>
+<div id="djbooth"><div class="disc">🎧</div><div class="tinfo"><b id="djvibe">DJ ʻOHANA — sunshine set ☀️ happy EDM · afro house</b><span id="djtrack">open source sunshine · press play · good vibes forever</span></div><button id="djplay">▶ PLAY</button><button id="djskip" style="display:none">⏭</button></div>
 <audio id="djaudio"></audio>
 <script>
 (function(){
-const SEEDS=["DWK123","badpanda049","stqk011","kzz002","csr049","dystopiaq029","HILIV003","Vkrsnl038MirandaShvangiradzeTalkToMeEp","puls02","NS050","DWK031","MIXG032","badpanda018","2014-02-12Bigwords","001netlabel-jazz-01-recorcholis"];
+// 🎚️ TODAY'S VIBE (Shaka-requested 2026-08-01: "happier EDM and afro house").
+// Swap the whole vibe by editing this one object. Crate stays OPEN SOURCE ONLY:
+// CC/netlabel collections — no commercial re-uploads, ever (DJ ʻOhana's soul).
+const VIBE={
+  name:"DJ ʻOHANA — sunshine set ☀️ happy EDM · afro house",
+  q:"collection%3Anetlabels+AND+mediatype%3Aaudio+AND+%28subject%3Ahouse+OR+subject%3A%22deep+house%22+OR+subject%3A%22funky+house%22+OR+subject%3Adance+OR+subject%3Aedm+OR+subject%3Aelectro+OR+subject%3Adisco+OR+subject%3Afunk+OR+subject%3Aafrobeat+OR+subject%3A%22afro+house%22+OR+subject%3Atropical%29+AND+downloads%3A%5B300+TO+*%5D",
+  pages:30,
+  seeds:["quiz050","starfrosch-mostwanted","exp036","Mwcd003-HiFiAfricanDrums","Mwcd0005-NuAfrobeat","BarcelonaAfrobeatInternationalOrchestra","DaanHendriks","s27-043WeAreOne-Section27Netlabel","diginet001","nws142","c0mpiled","DubTravellers__Le_Radici_Del_Ritmo"]
+};
+const SEEDS=VIBE.seeds;
+document.getElementById('djvibe').textContent=VIBE.name;
 let queue=[],audio=document.getElementById('djaudio'),booth=document.getElementById('djbooth'),track=document.getElementById('djtrack'),playBtn=document.getElementById('djplay'),skipBtn=document.getElementById('djskip');
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 async function moreCrates(){
   try{
-    const r=await fetch('https://archive.org/advancedsearch.php?q=collection%3Anetlabels+AND+mediatype%3Aaudio+AND+downloads%3A%5B200+TO+*%5D&fl%5B%5D=identifier&rows=40&page='+(1+Math.floor(Math.random()*20))+'&output=json');
+    const r=await fetch('https://archive.org/advancedsearch.php?q='+VIBE.q+'&fl%5B%5D=identifier&rows=50&page='+(1+Math.floor(Math.random()*VIBE.pages))+'&output=json');
     const j=await r.json();
-    return j.response.docs.map(d=>d.identifier);
+    if(j.response.docs.length) return j.response.docs.map(d=>d.identifier);
+    const r2=await fetch('https://archive.org/advancedsearch.php?q='+VIBE.q+'&fl%5B%5D=identifier&rows=50&page=1&output=json');
+    return (await r2.json()).response.docs.map(d=>d.identifier);
   }catch(e){return [];}
 }
 async function playNext(){
